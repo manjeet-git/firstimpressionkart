@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FirstImpressionKart</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header class="topbar">
+  <div class="logo">First<span>Impression</span>Kart</div>
+
+  <div class="search-wrap" id="searchWrap">
+    <select id="categoryFilter">
+      <option value="">All categories</option>
+    </select>
+    <input type="text" id="searchInput" placeholder="Search products...">
+  </div>
+
+  <div class="nav-actions">
+    <button class="pill-btn ghost" id="btnShop">Shop</button>
+    <button class="pill-btn ghost hidden" id="btnMyOrders">My Orders</button>
+    <button class="cart-btn hidden" id="btnCart">Cart <span class="cart-count" id="cartCount">0</span></button>
+    <div id="authArea"></div>
+  </div>
+</header>
+
+<!-- ================= ADMIN SUBNAV ================= -->
+<nav class="admin-nav hidden" id="adminNav">
+  <button id="navAdminProducts" class="active">Products</button>
+  <button id="navAdminOrders">Orders</button>
+  <button id="navAdminStock">Stock Chart</button>
+</nav>
+
+<!-- ================= MAIN ================= -->
+<main class="container">
+
+  <!-- Logged out hero -->
+  <section id="view-loggedout" class="login-hero hidden">
+    <h2>Welcome to FirstImpressionKart</h2>
+    <p>Sign in with Google to shop and track your orders.</p>
+    <button class="btn" id="btnHeroLogin">Sign in with Google</button>
+  </section>
+
+  <!-- Customer: Shop -->
+  <section id="view-shop" class="hidden">
+    <div class="section-title"><span class="dot"></span>All Products</div>
+    <div class="grid" id="productGrid"></div>
+  </section>
+
+  <!-- Customer: My Orders -->
+  <section id="view-myorders" class="hidden">
+    <div class="section-title"><span class="dot"></span>My Orders</div>
+    <div id="myOrdersList"></div>
+  </section>
+
+  <!-- Admin: Products management -->
+  <section id="view-admin-products" class="hidden">
+    <div class="card" style="margin-bottom:20px;">
+      <h3 id="productFormTitle" style="margin-bottom:14px;">Add New Product</h3>
+      <form id="productForm">
+        <input type="hidden" id="editProductId">
+        <div class="form-grid">
+          <label>Product name
+            <input type="text" id="pName" required>
+          </label>
+          <label>Category
+            <input type="text" id="pCategory" required placeholder="e.g. Electronics">
+          </label>
+          <label>Image URL
+            <input type="url" id="pImage" required placeholder="https://...">
+          </label>
+          <label>Price (₹)
+            <input type="number" id="pPrice" min="0" step="0.01" required>
+          </label>
+          <label>Discount (%)
+            <input type="number" id="pDiscount" min="0" max="100" value="0">
+          </label>
+          <label>Stock quantity
+            <input type="number" id="pStock" min="0" required>
+          </label>
+          <label style="grid-column:1/-1;">Description
+            <textarea id="pDesc" placeholder="Short product description"></textarea>
+          </label>
+        </div>
+        <button type="submit" class="btn" id="productSubmitBtn">Add Product</button>
+        <button type="button" class="btn outline hidden" id="cancelEditBtn" style="margin-left:8px;">Cancel</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px;"><span class="dot"></span>Manage Products</div>
+      <div class="search-wrap" style="margin-bottom:14px;max-width:500px;">
+        <select id="adminCategoryFilter"><option value="">All categories</option></select>
+        <input type="text" id="adminSearchInput" placeholder="Search products...">
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Discount</th><th>Stock</th><th>Actions</th></tr></thead>
+          <tbody id="adminProductTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin: Orders management -->
+  <section id="view-admin-orders" class="hidden">
+    <div class="section-title"><span class="dot"></span>All Customer Orders</div>
+    <div class="card">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Placed</th><th>Status</th><th>Update</th></tr></thead>
+          <tbody id="adminOrdersTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin: Stock chart -->
+  <section id="view-admin-stock" class="hidden">
+    <div class="section-title"><span class="dot"></span>Stock Overview</div>
+    <div class="chart-wrap">
+      <canvas id="stockChart" height="120"></canvas>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= CART DRAWER ================= -->
+<div class="drawer-overlay hidden" id="cartOverlay">
+  <div class="drawer">
+    <div class="drawer-head">
+      <h3>Your Cart</h3>
+      <button class="close-x" id="closeCart">&times;</button>
+    </div>
+    <div id="cartItemsList"></div>
+    <div class="cart-total-row">
+      <span>Total</span><span id="cartTotalAmt">₹0.00</span>
+    </div>
+    <button class="btn block success" id="placeOrderBtn">Place Order</button>
+  </div>
+</div>
+
+<div id="toastHost"></div>
+
+<!-- ================= FIREBASE (compat SDK) ================= -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<!-- Chart.js for stock chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<!-- jsPDF for bill/invoice download -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>

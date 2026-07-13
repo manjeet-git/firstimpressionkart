@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.email == 'manjeettechkumar@gmail.com';
+    }
+
+    // Products: anyone can view, only superadmin can add/edit/delete
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // Orders: customer can create their own order and read only their own orders.
+    // Superadmin can read all orders and update status. No one can delete orders.
+    match /orders/{orderId} {
+      allow read: if isSignedIn() &&
+                    (resource.data.userId == request.auth.uid || isSuperAdmin());
+
+      allow create: if isSignedIn() &&
+                      request.resource.data.userId == request.auth.uid;
+
+      allow update: if isSuperAdmin();
+
+      allow delete: if false;
+    }
+  }
+}
