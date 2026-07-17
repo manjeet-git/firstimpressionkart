@@ -11,6 +11,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
 
 const SUPERADMIN_EMAIL = "manjeettechkumar@gmail.com";
 const STATUSES = ["Initiated", "In-Progress", "Ready to Pickup"];
@@ -414,18 +415,66 @@ function renderAdminProductTable(){
 $("adminCategoryFilter").addEventListener("change", renderAdminProductTable);
 $("adminSearchInput").addEventListener("input", renderAdminProductTable);
 
+/* live preview when a file is picked */
+$("pImageFile").addEventListener("change", () => {
+  const file = $("pImageFile").files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    $("pImagePreview").src = reader.result;
+    $("pImagePreview").style.display = "inline-block";
+  };
+  reader.readAsDataURL(file);
+});
+
+/* uploads the picked file to Firebase Storage, returns download URL */
+async function uploadProductImage(file){
+  const safeName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9._-]/g,"");
+  const ref = storage.ref().child("products/" + safeName);
+  $("uploadStatus").textContent = "Uploading image...";
+  const task = ref.put(file);
+  return new Promise((resolve, reject) => {
+    task.on("state_changed",
+      (snap) => {
+        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+        $("uploadStatus").textContent = "Uploading image... " + pct + "%";
+      },
+      (err) => { $("uploadStatus").textContent = ""; reject(err); },
+      async () => {
+        const url = await task.snapshot.ref.getDownloadURL();
+        $("uploadStatus").textContent = "Upload complete";
+        resolve(url);
+      }
+    );
+  });
+}
+
 $("productForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const data = {
-    name: $("pName").value.trim(),
-    category: $("pCategory").value.trim(),
-    imageUrl: $("pImage").value.trim(),
-    price: parseFloat($("pPrice").value) || 0,
-    discount: parseFloat($("pDiscount").value) || 0,
-    stock: parseInt($("pStock").value) || 0,
-    description: $("pDesc").value.trim()
-  };
+  const file = $("pImageFile").files[0];
+
+  if(!file && !$("pImage").value){
+    toast("Please choose a product image");
+    return;
+  }
+
+  $("productSubmitBtn").disabled = true;
   try{
+    let imageUrl = $("pImage").value.trim();
+    if(file){
+      imageUrl = await uploadProductImage(file);
+    }
+
+    const data = {
+      name: $("pName").value.trim(),
+      category: $("pCategory").value.trim(),
+      imageUrl: imageUrl,
+      price: parseFloat($("pPrice").value) || 0,
+      discount: parseFloat($("pDiscount").value) || 0,
+      stock: parseInt($("pStock").value) || 0,
+      description: $("pDesc").value.trim()
+    };
+
     if(editingProductId){
       await db.collection("products").doc(editingProductId).update(data);
       toast("Product updated");
@@ -437,6 +486,8 @@ $("productForm").addEventListener("submit", async (e) => {
     resetProductForm();
   } catch(err){
     toast("Error: " + err.message);
+  } finally {
+    $("productSubmitBtn").disabled = false;
   }
 });
 function editProduct(id){
@@ -446,6 +497,10 @@ function editProduct(id){
   $("pName").value = p.name;
   $("pCategory").value = p.category||"";
   $("pImage").value = p.imageUrl;
+  $("pImageFile").value = "";
+  $("pImagePreview").src = p.imageUrl;
+  $("pImagePreview").style.display = "inline-block";
+  $("uploadStatus").textContent = "Current image shown. Choose a new file only to replace it.";
   $("pPrice").value = p.price;
   $("pDiscount").value = p.discount||0;
   $("pStock").value = p.stock;
@@ -458,6 +513,10 @@ function editProduct(id){
 function resetProductForm(){
   editingProductId = null;
   $("productForm").reset();
+  $("pImage").value = "";
+  $("pImagePreview").src = "";
+  $("pImagePreview").style.display = "none";
+  $("uploadStatus").textContent = "";
   $("productFormTitle").textContent = "Add New Product";
   $("productSubmitBtn").textContent = "Add Product";
   $("cancelEditBtn").classList.add("hidden");

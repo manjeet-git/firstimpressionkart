@@ -258,7 +258,63 @@ th{color:var(--muted);font-weight:700;text-transform:uppercase;font-size:11px;}
 .login-hero h2{font-size:26px;margin-bottom:10px;}
 .login-hero p{color:var(--muted);margin-bottom:20px;}
 
-@media(max-width:640px){
+/* ================= RESPONSIVE / MOBILE ================= */
+@media(max-width:768px){
+  .topbar{
+    padding:10px 14px;
+    gap:8px;
+  }
+  .logo{font-size:18px;flex:1;}
   .search-wrap{order:3;width:100%;}
-  .topbar{gap:10px;}
+  .nav-actions{
+    width:100%;
+    justify-content:space-between;
+    order:2;
+  }
+  .user-chip span{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pill-btn, .cart-btn{padding:8px 12px;font-size:13px;}
+
+  .admin-nav{
+    padding:10px 14px;
+    gap:8px;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+  }
+  .admin-nav button{white-space:nowrap;padding:8px 12px;font-size:12px;}
+
+  .container{padding:14px;}
+  .section-title{font-size:18px;}
+
+  .grid{
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px;
+  }
+  .pcard img{height:120px;}
+  .pcard-body{padding:10px;}
+  .pcard h4{font-size:13px;}
+  .pcard-desc{display:none;}
+  .price-now{font-size:15px;}
+
+  .drawer{width:100%;max-width:100%;padding:16px;}
+
+  .card{padding:14px;}
+  .form-grid{grid-template-columns:1fr;}
+
+  table{font-size:12px;}
+  th,td{padding:8px 6px;}
+  .tbl-img{width:36px;height:36px;}
+
+  .login-hero{padding:40px 16px;}
+  .login-hero h2{font-size:20px;}
+
+  .chart-wrap{padding:14px;}
+
+  .qty-row button{width:30px;height:30px;font-size:15px;}
+  .cart-item img{width:48px;height:48px;}
+}
+
+@media(max-width:420px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+  .logo{font-size:16px;}
+  .cart-count{width:17px;height:17px;font-size:10px;}
 }

@@ -69,8 +69,9 @@
           <label>Category
             <input type="text" id="pCategory" required placeholder="e.g. Electronics">
           </label>
-          <label>Image URL
-            <input type="url" id="pImage" required placeholder="https://...">
+          <label>Product image
+            <input type="file" id="pImageFile" accept="image/*">
+            <input type="hidden" id="pImage">
           </label>
           <label>Price (₹)
             <input type="number" id="pPrice" min="0" step="0.01" required>
@@ -80,6 +81,10 @@
           </label>
           <label>Stock quantity
             <input type="number" id="pStock" min="0" required>
+          </label>
+          <label>Image preview
+            <img id="pImagePreview" src="" alt="" style="width:70px;height:70px;object-fit:cover;border-radius:8px;background:#f0f0f7;display:none;">
+            <span id="uploadStatus" style="font-size:11px;color:var(--muted);"></span>
           </label>
           <label style="grid-column:1/-1;">Description
             <textarea id="pDesc" placeholder="Short product description"></textarea>
@@ -149,6 +154,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-storage-compat.js"></script>
 
 <!-- Chart.js for stock chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
