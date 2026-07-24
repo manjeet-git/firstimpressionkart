@@ -11,7 +11,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
+
+/* ============ CLOUDINARY CONFIG ============
+   1. Sign up free at https://cloudinary.com
+   2. Dashboard shows your "Cloud name" -> paste below.
+   3. Settings -> Upload -> Upload presets -> Add upload preset ->
+      set "Signing Mode" to "Unsigned" -> Save -> paste the preset name below.
+*/
+const CLOUDINARY_CLOUD_NAME = "ecvjhylp";
+const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 
 const SUPERADMIN_EMAIL = "manjeettechkumar@gmail.com";
 const STATUSES = ["Initiated", "In-Progress", "Ready to Pickup"];
@@ -427,25 +435,50 @@ $("pImageFile").addEventListener("change", () => {
   reader.readAsDataURL(file);
 });
 
-/* uploads the picked file to Firebase Storage, returns download URL */
-async function uploadProductImage(file){
-  const safeName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9._-]/g,"");
-  const ref = storage.ref().child("products/" + safeName);
-  $("uploadStatus").textContent = "Uploading image...";
-  const task = ref.put(file);
+/* uploads the picked file to Cloudinary, returns the hosted image URL */
+function uploadProductImage(file){
   return new Promise((resolve, reject) => {
-    task.on("state_changed",
-      (snap) => {
-        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+    if(CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME"){
+      reject(new Error("Cloudinary not configured yet. Set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in app.js"));
+      return;
+    }
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+    xhr.timeout = 25000;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+    $("uploadStatus").textContent = "Uploading image...";
+
+    xhr.upload.onprogress = (e) => {
+      if(e.lengthComputable){
+        const pct = Math.round((e.loaded / e.total) * 100);
         $("uploadStatus").textContent = "Uploading image... " + pct + "%";
-      },
-      (err) => { $("uploadStatus").textContent = ""; reject(err); },
-      async () => {
-        const url = await task.snapshot.ref.getDownloadURL();
-        $("uploadStatus").textContent = "Upload complete";
-        resolve(url);
       }
-    );
+    };
+    xhr.onload = () => {
+      let data;
+      try { data = JSON.parse(xhr.responseText); } catch(e){ data = null; }
+      if(xhr.status >= 200 && xhr.status < 300 && data && data.secure_url){
+        $("uploadStatus").textContent = "Upload complete";
+        resolve(data.secure_url);
+      } else {
+        console.error("Cloudinary upload error:", data);
+        $("uploadStatus").textContent = "";
+        reject(new Error((data && data.error && data.error.message) || "Upload failed (status " + xhr.status + ")"));
+      }
+    };
+    xhr.onerror = () => {
+      $("uploadStatus").textContent = "";
+      reject(new Error("Network error during upload. Check your internet connection."));
+    };
+    xhr.ontimeout = () => {
+      $("uploadStatus").textContent = "";
+      reject(new Error("Upload timed out. Check your Cloudinary cloud name and upload preset."));
+    };
+    xhr.send(formData);
   });
 }
 
